@@ -108,7 +108,8 @@ Converts the argument passed in to an array if it is defined and not already an 
 
 ### Notes:
 
-This is equivalent to *$splat* from MooTools 1.2.
+This is equivalent to *$splat* from MooTools 1.2, with the exception of Array-like Objects such as NodeList or FileList which `Array.from` does transform in
+Arrays and `$splat` not.
 
 
 
@@ -183,7 +184,12 @@ Returns an array with the named method applied to the array's contents.
 	var foo = [4, 8, 15, 16, 23, 42];
 	var bar = foo.invoke('limit', 10, 30);	//bar is now [10, 10, 15, 16, 23, 30]
 
+### Notes:
 
+The method that is invoked is a method of each of the items.
+If the method does not exist, then an error will be thrown. For example:
+
+	[0, false, 'string'].invoke('limit', 0, 10); // throws an error!
 
 Array method: every {#Array:every}
 ----------------------------
@@ -515,6 +521,9 @@ Appends the passed array to the end of the current array.
 
 	var myOtherArray = ['green', 'yellow'];
 	['red', 'blue'].append(myOtherArray); // returns ['red', 'blue', 'green', 'yellow'];
+	myOtheArray; // is now ['red', 'blue', 'green', 'yellow'];
+
+	[0, 1, 2].append([3, [4]]); // [0, 1, 2, 3, [4]]
 
 ### Notes:
 
@@ -736,7 +745,7 @@ Converts an hexadecimal color value to RGB. Input array must be the following he
 
 ### See Also:
 
-- [String:hexToRgb](/Types/String/#hexToRgb)
+- [String:hexToRgb][]
 
 
 
@@ -767,11 +776,13 @@ Converts an RGB color value to hexadecimal. Input array must be in one of the fo
 
 ### See Also:
 
-- [String:rgbToHex](/Types/String/#rgbToHex)
+- [String:rgbToHex][]
 
 
 
-[Function:bind]: /core/Native/Function/#Function:bind
+[Function:bind]: /core/Types/Function/#Function:bind
+[String:hexToRgb]: /core/Types/String/#String:hexToRgb
+[String:rgbToHex]: /core/Types/String/#String:rgbToHex
 [MDC Array]: https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/Array
 [MDC Array:every]: https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/Array/every
 [MDC Array:filter]: https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/Array/filter

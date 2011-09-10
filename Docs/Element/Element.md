@@ -114,7 +114,7 @@ The Element instance returned is an array-like object, supporting every [Array][
 - Since MooTools 1.3 this function does not accept multiple collections or multiple strings as arguments.
 - If an expression doesn't find any elements, an empty Elements instance will be returned.
 - The return type of element methods run through [$$][] is always an Elements instance, regardless of the amount of results.
-
+- Default Selectors supported are the same as you can find on [W3C CSS3 selectors](http://www.w3.org/TR/css3-selectors/#selectors).
 
 
 Type: Element {#Element}
@@ -162,9 +162,13 @@ Creates a new Element of the type passed in.
 			}
 		}
 	});
-	
+
 	// Using Selectors
 	var myNewElement = new Element('a.myClass');
+
+### Note:
+
+Because the element name is parsed as a CSS selector, colons in namespaced tags have to be escaped. So `new Element('fb\:name)` becomes `<fb:name>`.
 
 ### See Also:
 
@@ -193,9 +197,10 @@ Gets the first descendant element whose tag name matches the tag provided. CSS s
 
 	var firstDiv = $(document.body).getElement('div');
 
-### Note:
+### Notes:
 
-This method is also available for Document instances.
+- This method is also available for Document instances.
+- Default Selectors supported are the same as you can find on [W3C CSS3 selectors](http://www.w3.org/TR/css3-selectors/#selectors).
 
 
 
@@ -220,9 +225,10 @@ Collects all decedent elements whose tag name matches the tag provided. CSS sele
 
 	var allAnchors = $(document.body).getElements('a');
 
-### Note:
+### Notes:
 
-This method is also available for Document instances.
+- This method is also available for Document instances.
+- Default Selectors supported are the same as you can find on [W3C CSS3 selectors](http://www.w3.org/TR/css3-selectors/#selectors).
 
 
 
@@ -561,7 +567,7 @@ Appends the Element at a particular place relative to the Element's children (sp
 ### Arguments:
 
 1. el - (*mixed*) el can be the id of an element or an Element.
-2. where - (*string*, optional: default 'bottom') The place to append this Element. Can be 'top' or 'bottom'.
+2. where - (*string*, optional: default 'bottom') The place to append this Element. Can be 'top', 'bottom', 'before' or 'after'.
 
 ### Returns:
 
@@ -569,17 +575,34 @@ Appends the Element at a particular place relative to the Element's children (sp
 
 ### Examples:
 
+##### HTML
+
+	<div id="first">
+		<div id="child"></div>
+	</div>
+
 ##### JavaScript
 
-	var myFirstElement = new Element('div', {id: 'myFirstElement'});
-	var mySecondElement = new Element('div', {id: 'mySecondElement'});
-
-	myFirstElement.grab(mySecondElement);
+	var mySecondElement = new Element('div#second');
+	$('first').grab(mySecondElement);
 
 ##### Resulting HTML
 
-	<div id="myFirstElement">
-		<div id="mySecondElement"></div>
+	<div id="first">
+		<div id="child"></div>
+		<div id="second"></div>
+	</div>
+
+##### JavaScript
+
+	var mySecondElement = new Element('div#second');
+	myFirstElement.grab(mySecondElement, 'top');
+
+##### Resulting HTML
+
+	<div id="first">
+		<div id="second"></div>
+		<div id="child"></div>
 	</div>
 
 ### See Also:
@@ -591,7 +614,7 @@ Appends the Element at a particular place relative to the Element's children (sp
 Element Method: adopt {#Element:adopt}
 --------------------------------------
 
-Works like [Element:grab](#Element:grab), but allows multiple elements to be adopted.
+Works like [Element:grab](#Element:grab), but allows multiple elements to be adopted and only appended at the bottom.
 
 Inserts the passed element(s) inside the Element (which will then become the parent element).
 
@@ -612,27 +635,26 @@ Inserts the passed element(s) inside the Element (which will then become the par
 
 ##### JavaScript
 
-	var myFirstElement  = new Element('div', {id: 'myFirstElement'});
-	var mySecondElement = new Element('a', {id: 'mySecondElement'});
-	var myThirdElement  = new Element('ul', {id: 'myThirdElement'});
+	var myFirstElement  = new Element('div#first');
+	var mySecondElement = new Element('p#second');
+	var myThirdElement  = new Element('ul#third');
+	var myFourthElement = new Element('a#fourth');
 
-	myParent.adopt(myFirstElement);
-	myParent2.adopt(myFirstElement, 'mySecondElement');
-	myParent3.adopt([myFirstElement, mySecondElement, myThirdElement]);
+	var myParentElement = new Element('div#parent');
+
+	myFirstElement.adopt(mySecondElement);
+	mySecondElement.adopt('third', myFourthElement);
+
+	myParent3.adopt([myFirstElement, new Element('span#another')]);
 
 ##### Resulting HTML
 
-	<div id="myParent">
-		<div id="myFirstElement" />
-	</div>
-	<div id="myParent2">
-		<div id="myFirstElement" />
-		<a />
-	</div>
-	<div id="myParent3">
-		<div id="myFirstElement" />
-		<a />
-		<ul />
+	<div id="parent">
+		<p id="second">
+			<ul id="third"></ul>
+			<a id="fourth"></a>
+		</p>
+		<span id="another"></span>
 	</div>
 
 ### See Also:
@@ -644,9 +666,7 @@ Inserts the passed element(s) inside the Element (which will then become the par
 Element Method: wraps {#Element:wraps}
 --------------------------------------
 
-Works like [Element:grab](#Element:grab), but instead of moving the grabbed element from its place, this method moves this Element around its target.
-
-The Element is moved to the position of the passed element and becomes the parent.
+Works like [Element:grab](#Element:grab), but replaces the element in its place, and then appends the replaced element in the location specified inside the this element.
 
 ### Syntax:
 
@@ -665,20 +685,46 @@ The Element is moved to the position of the passed element and becomes the paren
 
 ##### HTML
 
-	<div id="myFirstElement"></div>
+	<div id="first"></div>
 
 ##### JavaScript
 
-	var mySecondElement = new Element('div', {id: 'mySecondElement'});
-	mySecondElement.wraps($('myFirstElement'));
+	var mySecondElement = new Element('div#second').wraps('first');
 
 ##### Resulting HTML
 
-	<div id="mySecondElement">
-		<div id="myFirstElement"></div>
+	<div id="second">
+		<div id="first"></div>
 	</div>
 
+##### HTML
 
+	<div id="first"></div>
+	<div id="second">
+		<div id="child"></div>
+	</div>
+
+##### JavaScript
+
+	$('second').wraps('first');
+
+##### Resulting HTML
+
+	<div id="second">
+		<div id="child"></div>
+		<div id="first"></div>
+	</div>
+
+##### JavaScript
+
+	$('second').wraps('first', 'top');
+
+##### Resulting HTML
+
+	<div id="second">
+		<div id="first"></div>
+		<div id="child"></div>
+	</div>
 
 Element Method: appendText {#Element:appendText}
 ------------------------------------------------
@@ -688,7 +734,7 @@ A text node will be created inside this Element, in either the top or bottom pos
 
 ### Syntax:
 
-	myElement.appendText(text);
+	myElement.appendText(text[, where]);
 
 ### Arguments:
 
@@ -746,7 +792,7 @@ Removes the Element from the DOM.
 
 ### See Also:
 
-- [MDC Element:removeChild](http://developer.mozilla.org/en/docs/DOM:element.removeChild)
+- [MDC Element:removeChild][]
 
 
 
@@ -774,7 +820,7 @@ Clones the Element and returns the cloned one.
 
 ##### HTML
 
-	<div id="myElement"></div>
+	<div id="myElement">ciao</div>
 
 ##### JavaScript
 
@@ -822,7 +868,7 @@ Replaces the passed Element with Element.
 
 ### See Also:
 
-- [MDC Element:replaceChild](http://developer.mozilla.org/en/docs/DOM:element.replaceChild)
+- [MDC Element:replaceChild][]
 
 
 
@@ -1019,7 +1065,7 @@ Like Element.getNext, but returns a collection of all the matched nextSiblings.
 Element Method: getFirst {#Element:getFirst}
 --------------------------------------------
 
-Works as [Element:getPrevious][], but tries to find the firstChild (excluding text nodes).
+Gets the first element that matches the passed in expression.
 
 
 ### Syntax:
@@ -1028,18 +1074,18 @@ Works as [Element:getPrevious][], but tries to find the firstChild (excluding te
 
 ### Arguments:
 
-1. match - (*string*, optional): A tag name to match the found element(s) with. A full CSS selector can be passed.
+1. match - (*string*, optional): A full CSS selector to match the found element(s) with.
 
 ### Returns:
 
-* (*mixed*) The first sibling Element or null if none found.
+* (*mixed*) The first found element or null if none found.
 
 
 
 Element Method: getLast {#Element:getLast}
 ------------------------------------------
 
-Works as [Element:getPrevious][], but tries to find the lastChild.
+Gets the last element that matches the passed in expression.
 
 ### Syntax:
 
@@ -1047,11 +1093,11 @@ Works as [Element:getPrevious][], but tries to find the lastChild.
 
 ### Arguments:
 
-1. match - (*string*, optional): A tag name to match the found element(s) with. A full CSS selector can be passed.
+1. match - (*string*, optional): A full CSS selector to match the found element(s) with.
 
 ### Returns:
 
-* (*mixed*) The first sibling Element, or returns null if none found.
+* (*mixed*) The last found element, or returns null if none found.
 
 
 
@@ -1160,8 +1206,7 @@ Empties an Element of all its children.
 Element Method: destroy {#Element:destroy}
 ------------------------------------------
 
-Empties an Element of all its children, removes and garbages the Element.
-Useful to clear memory before the pageUnload.
+Removes the Element and its children from the DOM and prepares them for garbage collection.
 
 ### Syntax:
 
@@ -1518,7 +1563,7 @@ This Object contains the functions that respond to the first argument passed in 
 
 		get: function(){
 			return this.disabled;
-		}
+		},
 
 		set: function(value){
 			this.disabled = !!value;
@@ -1564,11 +1609,11 @@ Sets the innerHTML of the Element.
 
 #### Syntax:
 
-	myElement.set('html', [htmlString[, htmlString2[, htmlString3[, ..]]]);
+	myElement.set('html', html);
 
 #### Arguments:
 
-1. Any number of string parameters with HTML.
+1. html - (*string*) The new content as HTML string.
 
 #### Returns:
 
@@ -1582,7 +1627,7 @@ Sets the innerHTML of the Element.
 
 ##### JavaScript
 
-	$('myElement').set('html', '<div></div>', '<p></p>');
+	$('myElement').set('html', '<div></div><p></p>');
 
 ##### Resulting HTML
 
@@ -1749,9 +1794,8 @@ Creates an IFrame HTML Element and extends its window and document with MooTools
 
 ### Notes:
 
-- If the IFrame is from the same domain as the "host" or running locally, its document and window will be extended with MooTools functionalities, allowing you to fully use MooTools within it.
 - If the IFrame already exists and has a different name than id, the name will be made the same as the id.
-- If the IFrame is from a different domain, its window and document will not be extended with MooTools methods.
+- An IFrame's window and document will not be extended with MooTools methods.
 
 
 
@@ -1776,7 +1820,7 @@ Elements Method: constructor {#Elements:constructor}
 
 ### Returns:
 
-* (*array*) An extended array with the [Element][], [Elements][] and [Array][] methods.
+* (*array*) An array-like Elements collection with the [Element][], [Elements][] and [Array][] methods.
 
 ### Examples:
 
@@ -1799,7 +1843,7 @@ Elements Method: constructor {#Elements:constructor}
 ### Notes:
 
 - In MooTools, every DOM function which returns a collection of nodes (such as [$$][]) returns the nodes as instances of Elements.
-- Because Elements is an Array, it accepts all the [Array][] methods, while giving precedence to [Element][] and [Elements][] methods.
+- Because Elements is an array-like-object, it accepts all the [Array][] methods, while giving precedence to [Element][] and [Elements][] methods.
 - Every node of the Elements instance has all the [Element][] methods.
 
 ### See Also:
@@ -1875,3 +1919,6 @@ This method has been deprecated. Use [Element:contains][] instead.
 [Element:setStyles]: /core/Element/Element.Style#Element:setStyles
 
 [The Dollar Save Mode]: http://mootools.net/blog/2009/06/22/the-dollar-safe-mode/
+
+[MDC Element:removeChild]: https://developer.mozilla.org/En/DOM/Node.removeChild
+[MDC Element:replaceChild]: https://developer.mozilla.org/En/DOM/Node.replaceChild

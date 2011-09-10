@@ -16,7 +16,8 @@ provides: Request
 
 (function(){
 
-var progressSupport = ('onprogress' in new Browser.Request);
+var empty = function(){},
+	progressSupport = ('onprogress' in new Browser.Request);
 
 var Request = this.Request = new Class({
 
@@ -31,7 +32,9 @@ var Request = this.Request = new Class({
 		onSuccess: function(responseText, responseXML){},
 		onFailure: function(xhr){},
 		onException: function(headerName, value){},
-		onTimeout: function(){},*/
+		onTimeout: function(){},
+		user: '',
+		password: '',*/
 		url: '',
 		data: '',
 		headers: {
@@ -67,9 +70,10 @@ var Request = this.Request = new Class({
 			var status = xhr.status;
 			this.status = (status == 1223) ? 204 : status;
 		}.bind(this));
-		xhr.onreadystatechange = function(){};
+		xhr.onreadystatechange = empty;
+		if (progressSupport) xhr.onprogress = xhr.onloadstart = empty;
 		clearTimeout(this.timer);
-		
+
 		this.response = {text: this.xhr.responseText || '', xml: this.xhr.responseXML};
 		if (this.options.isSuccess.call(this, this.status))
 			this.success(this.response.text, this.response.xml);
@@ -96,7 +100,7 @@ var Request = this.Request = new Class({
 	},
 
 	onSuccess: function(){
-		this.triggerEvent('complete', arguments).triggerEvent('success', arguments).callChain();
+		this.fireEvent('complete', arguments).fireEvent('success', arguments).callChain();
 	},
 
 	failure: function(){
@@ -104,19 +108,19 @@ var Request = this.Request = new Class({
 	},
 
 	onFailure: function(){
-		this.triggerEvent('complete').triggerEvent('failure', this.xhr);
+		this.fireEvent('complete').fireEvent('failure', this.xhr);
 	},
-	
+
 	loadstart: function(event){
-		this.triggerEvent('loadstart', [event, this.xhr]);
+		this.fireEvent('loadstart', [event, this.xhr]);
 	},
-	
+
 	progress: function(event){
-		this.triggerEvent('progress', [event, this.xhr]);
+		this.fireEvent('progress', [event, this.xhr]);
 	},
-	
+
 	timeout: function(){
-		this.triggerEvent('timeout', this.xhr);
+		this.fireEvent('timeout', this.xhr);
 	},
 
 	setHeader: function(name, value){
@@ -138,7 +142,7 @@ var Request = this.Request = new Class({
 		}
 		return false;
 	},
-	
+
 	send: function(options){
 		if (!this.check(options)) return this;
 
@@ -174,12 +178,12 @@ var Request = this.Request = new Class({
 		}
 
 		if (!url) url = document.location.pathname;
-		
+
 		var trimPosition = url.lastIndexOf('/');
 		if (trimPosition > -1 && (trimPosition = url.indexOf('#')) > -1) url = url.substr(0, trimPosition);
 
 		if (this.options.noCache)
-			url += (url.contains('?') ? '&' : '?') + String.generateUID();
+			url += (url.contains('?') ? '&' : '?') + String.uniqueID();
 
 		if (data && method == 'get'){
 			url += (url.contains('?') ? '&' : '?') + data;
@@ -192,18 +196,20 @@ var Request = this.Request = new Class({
 			xhr.onprogress = this.progress.bind(this);
 		}
 
-		xhr.open(method.toUpperCase(), url, this.options.async);
+		xhr.open(method.toUpperCase(), url, this.options.async, this.options.user, this.options.password);
+		if (this.options.user && 'withCredentials' in xhr) xhr.withCredentials = true;
+
 		xhr.onreadystatechange = this.onStateChange.bind(this);
 
 		Object.each(this.headers, function(value, key){
 			try {
 				xhr.setRequestHeader(key, value);
 			} catch (e){
-				this.triggerEvent('exception', [key, value]);
+				this.fireEvent('exception', [key, value]);
 			}
 		}, this);
 
-		this.triggerEvent('request');
+		this.fireEvent('request');
 		xhr.send(data);
 		if (!this.options.async) this.onStateChange();
 		if (this.options.timeout) this.timer = this.timeout.delay(this.options.timeout, this);
@@ -216,9 +222,10 @@ var Request = this.Request = new Class({
 		var xhr = this.xhr;
 		xhr.abort();
 		clearTimeout(this.timer);
-		xhr.onreadystatechange = xhr.onprogress = xhr.onloadstart = function(){};
+		xhr.onreadystatechange = empty;
+		if (progressSupport) xhr.onprogress = xhr.onloadstart = empty;
 		this.xhr = new Browser.Request();
-		this.triggerEvent('cancel');
+		this.fireEvent('cancel');
 		return this;
 	}
 
@@ -227,10 +234,11 @@ var Request = this.Request = new Class({
 var methods = {};
 ['get', 'post', 'put', 'delete', 'GET', 'POST', 'PUT', 'DELETE'].each(function(method){
 	methods[method] = function(data){
-		return this.send({
-			data: data,
+		var object = {
 			method: method
-		});
+		};
+		if (data != null) object.data = data;
+		return this.send(object);
 	};
 });
 

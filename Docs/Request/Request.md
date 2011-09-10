@@ -17,23 +17,34 @@ An XMLHttpRequest Wrapper.
 
 ### Options:
 
-* url        - (*string*: defaults to null) The URL to request. (Note, this can also be an instance of [URI][])
-* method     - (*string*: defaults to 'post') The HTTP method for the request, can be either 'post' or 'get'.
+* url        - (*string*: defaults to *null*) The URL to request. (Note, this can also be an instance of [URI][])
 * data       - (*string*: defaults to '') The default data for [Request:send][], used when no data is given.
 * link       - (*string*: defaults to 'ignore') Can be 'ignore', 'cancel' and 'chain'.
 	* 'ignore' - Any calls made to start while the request is running will be ignored. (Synonymous with 'wait': true from 1.11)
 	* 'cancel' - Any calls made to start while the request is running will take precedence over the currently running request. The new request will start immediately, canceling the one that is currently running. (Synonymous with 'wait': false from 1.11)
 	* 'chain'  - Any calls made to start while the request is running will be chained up, and will take place as soon as the current request has finished, one after another.
-* async      - (*boolean*: defaults to true) If set to false, the requests will be synchronous and freeze the browser during request.
-* encoding   - (*string*: defaults to 'utf-8') The encoding to be set in the request header.
+* method     - (*string*: defaults to 'post') The HTTP method for the request, can be either 'post' or 'get'.
+* emulation  - (*boolean*: defaults to *true*) If set to true, other methods than 'post' or 'get' are appended as post-data named '\_method' (as used in rails)
+* async      - (*boolean*: defaults to *true*) If set to false, the requests will be synchronous and freeze the browser during request.
+* timeout    - (*integer*: defaults to 0) In conjunction with `onTimeout` event, it determines the amount of milliseconds before considering a connection timed out. (It's suggested to not use timeout with big files and only when knowing what's expected.)
 * headers    - (*object*) An object to use in order to set the request headers.
+* urlEncoded - (*boolean*: defaults to *true*) If set to true, the content-type header is set to www-form-urlencoded + encoding
+* encoding   - (*string*: defaults to 'utf-8') The encoding to be set in the request header.
+* noCache    - (*boolean*; defaults to *false*) If *true*, appends a unique *noCache* value to the request to prevent caching. (IE has a bad habit of caching ajax request values. Including this script and setting the *noCache* value to true will prevent it from caching. The server should ignore the *noCache* value.)
 * isSuccess  - (*function*) Overrides the built-in isSuccess function.
+<<<<<<< HEAD:Docs/Request/Request.md
 * evalScripts  - (*boolean*: defaults to false) If set to true, `script` tags inside the response will be evaluated.
 * evalResponse - (*boolean*: defaults to false) If set to true, the entire response will be evaluated. Responses with javascript content-type will be evaluated automatically.
 * emulation  - (*boolean*: defaults to true) If set to true, other methods than 'post' or 'get' are appended as post-data named '\_method' (used in rails)
 * urlEncoded - (*boolean*: defaults to true) If set to true, the content-type header is set to www-form-urlencoded + encoding
 * timeout - (*integer*: defaults to 0) In conjunction with `onTimeout` event, it determines the amount of milliseconds before considering a connection timed out. (It's suggested to not use timeout with big files and only when knowing what's expected.)
 * noCache - (*boolean*; defaults to *false*) If *true*, appends a unique *noCache* value to the request to prevent caching. (IE has a bad habit of caching ajax request values. Including this script and setting the *noCache* value to true will prevent it from caching. The server should ignore the *noCache* value.)
+=======
+* evalScripts  - (*boolean*: defaults to *false*) If set to true, `script` tags inside the response will be evaluated.
+* evalResponse - (*boolean*: defaults to *false*) If set to true, the entire response will be evaluated. Responses with javascript content-type will be evaluated automatically.
+* user       - (*string*: defaults to *null*) When username is set the Request will open with credentials and try to authenticate.
+* password   - (*string*: defaults to *null*) You can use this option together with the `user` option to set authentication credentials when necessary. Note that the password will be passed as plain text and is therefore readable by anyone through the source code. It is therefore encouraged to use this option carefully
+>>>>>>> coco:Docs/Request/Request.md
 
 ### Events:
 
@@ -44,7 +55,7 @@ Fired when the Request is sent.
 ##### Signature:
 
 	onRequest()
-	
+
 #### loadstart
 
 Fired when the Request loaded, right before any progress starts. (This is limited to Browsers that support the event. At this time: Gecko and WebKit).
@@ -75,13 +86,13 @@ Fired when the Request is making progresses in the download or upload. (This is 
 
 	var myRequest = new Request({
 		url: 'image.jpg',
-		onProgress: function(event, xhr) {
+		onProgress: function(event, xhr){
 			var loaded = event.loaded, total = event.total;
 
 			console.log(parseInt(loaded / total * 100, 10));
 		}
 	});
-	
+
 	myRequest.send();
 
 ### See Also:
@@ -167,6 +178,37 @@ Fired when a request doesn't change state for `options.timeout` milliseconds.
 
 	onTimeout()
 
+
+### Example:
+
+This example fetches some text with Request. When the user clicks the link, the returned text by the server is used to update
+the element's text. It uses the `onRequest`, `onSuccess` and `onFailure` events to inform the user about the current state of
+the request. The `method` option is set to `get` because we get some text instead of posting it to the server. It gets the
+data-userid attribute of the clicked link, which will be used for the querystring.
+
+	var myElement = document.id('myElement');
+
+	var myRequest = new Request({
+		url: 'getMyText.php',
+		method: 'get',
+		onRequest: function(){
+			myElement.set('text', 'loading...');
+		},
+		onSuccess: function(responseText){
+			myElement.set('text', responseText);
+		},
+		onFailure: function(){
+			myElement.set('text', 'Sorry, your request failed :(');
+		}
+	});
+
+	document.id('myLink').addEvent('click', function(event){
+		event.stop();
+		myRequest.send('userid=' + this.get('data-userid'));
+	});
+
+
+
 Request Method: setHeader {#Request:setHeader}
 --------------------------------------
 
@@ -188,7 +230,7 @@ Add or modify a header for the request. It will not override headers from the op
 ### Example:
 
 	var myRequest = new Request({url: 'getData.php', method: 'get', headers: {'X-Request': 'JSON'}});
-	myRequest.setHeader('Last-Modified','Sat, 1 Jan 2005 05:00:00 GMT');
+	myRequest.setHeader('Last-Modified', 'Sat, 1 Jan 2005 05:00:00 GMT');
 
 Request Method: getHeader {#Request:getHeader}
 --------------------------------------
@@ -210,7 +252,7 @@ Returns the given response header or null if not found.
 
 ### Example:
 
-	var myRequest = new Request({url: 'getData.php', method: 'get', onSuccess: function(responseText, responseXML) {
+	var myRequest = new Request({url: 'getData.php', method: 'get', onSuccess: function(responseText, responseXML){
 		alert(this.getHeader('Date')); // alerts the server date (for example, 'Thu, 26 Feb 2009 20:26:06 GMT')
 	}});
 
@@ -233,11 +275,36 @@ Opens the Request connection and sends the provided data with the specified opti
 
 ### Examples:
 
-	var myRequest = new Request({url: 'http://localhost/some_url'}).send('save=username&name=John');
+	var myRequest = new Request({
+		url: 'http://localhost/some_url'
+	}).send('save=username&name=John');
 
-### Notes:
 
-MooTools provides several aliases for [Request:send][] to make it easier to use different methods. These aliases are post() and POST(), get() and GET(), put() and PUT() and delete() and DELETE().
+Request Methods: send aliases {#Request:send-aliases}
+-----------------------------------------------------
+
+MooTools provides several aliases for [Request:send][] to make it easier to use different methods.
+
+These aliases are:
+
+- `post()` and `POST()`
+- `get()` and `GET()`
+- `put()` and `PUT()`
+- `delete()` and `DELETE()`
+
+### Syntax:
+
+	myRequest.post([data]);
+
+### Arguments:
+
+1. data - (*string*, optional) Equivalent with the `data` option of Request.
+
+### Returns:
+
+* (*object*) This Request instance.
+
+### Examples:
 
 	var myRequest = new Request({url: 'http://localhost/some_url'});
 
@@ -254,6 +321,12 @@ MooTools provides several aliases for [Request:send][] to make it easier to use 
 		method: 'get',
 		data: 'save=username&name=John'
 	});
+
+### Note:
+
+By default the emulation option is set to true, so the *put* and *delete* send methods are emulated and will actually send as *post* while the method name is sent as e.g. `_method=delete`.
+
+
 
 Request Method: cancel {#Request:cancel}
 --------------------------------
@@ -289,7 +362,7 @@ Returns true if the request is currently running
 ### Example:
 
 	var myRequest = new Request({url: 'mypage.html', method: 'get'}).send('some=data');
-	
+
 	if (myRequest.isRunning()) // It runs!
 
 
@@ -340,7 +413,7 @@ Returns the previously set Request instance (or a new one with default options).
 
 #### Example:
 
-	el.get('send', {method: 'get'});
+	el.set('send', {method: 'get'});
 	el.send();
 	el.get('send'); // returns the Request instance.
 
@@ -391,7 +464,7 @@ Sends a form or a container of inputs with an HTML request.
 [$]: /core/Element/Element/#Window:dollar
 [Request:send]: #Request:send
 [Element.Properties]: /core/Element/Element/#Element-Properties
-[URI]: /more/Native/URI
+[URI]: /more/Types/URI
 [Chain]: /core/Class/Class.Extras#Chain
 [Events]: /core/Class/Class.Extras#Events
 [Options]: /core/Class/Class.Extras#Options

@@ -165,7 +165,7 @@ Events in a Class that implements [Events][] must be either added as an option o
 			// ...
 		},
 		complete: function(){
-			this.triggerEvent('complete');
+			this.fireEvent('complete');
 		}
 	});
 
@@ -237,14 +237,14 @@ The same as [addEvent][], but accepts an object to add multiple events at once.
 
 
 
-Events Method: triggerEvent {#Events:triggerEvent}
+Events Method: fireEvent {#Events:fireEvent}
 --------------------------------------------
 
 Fires all events of the specified type in the Class instance.
 
 ### Syntax:
 
-	myClass.triggerEvent(type[, args[, delay]]);
+	myClass.fireEvent(type[, args[, delay]]);
 
 ### Arguments:
 
@@ -262,7 +262,7 @@ Fires all events of the specified type in the Class instance.
 		Implements: Events,
 		initialize: function(arg1, arg2){
 			//...
-			this.triggerEvent('initialize', [arg1, arg2], 50);
+			this.fireEvent('initialize', [arg1, arg2], 50);
 		}
 	});
 
@@ -344,7 +344,7 @@ Will also add Class [Events][] when the option property begins with 'on' and is 
 Options Method: setOptions {#Options:setOptions}
 ------------------------------------------------
 
-Merges the default options of the Class with the options passed in.
+Merges the default options of the Class with the options passed in. Every value passed in to this method will be deep copied. Therefore other class instances or objects that are not intended for copying must be passed to a class in other ways.
 
 ### Syntax:
 
@@ -383,6 +383,18 @@ Merges the default options of the Class with the options passed in.
 
 	//myWidget.options is now: {color: #f00, size: {width: 200, height: 100}}
 
+	// Deep copy example
+	var mySize = {
+		width: 50,
+		height: 50
+	};
+
+	var myWidget = new Widget({
+		size: mySize
+	});
+
+	(mySize == myWidget.options.size) // false! mySize was copied in the setOptions call.
+
 ### Notes:
 
 - Relies on the default options of a Class defined in its options property.
@@ -410,7 +422,7 @@ If a Class has [Events][] as well as [Options][] implemented, every option begin
 		show: function(){
 			// Do some cool stuff
 
-			this.triggerEvent('show');
+			this.fireEvent('show');
 		}
 
 	});

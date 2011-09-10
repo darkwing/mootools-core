@@ -20,20 +20,25 @@ Class Method: constructor {#Class:constructor}
 
 * (*class*) The Class that this class will extend.
 
-The methods of this Class that have the same name as the Extends Class, will have a parent property, that allows you to call the other overridden method. The Extends property should be the first.
+The methods of this Class that have the same name as the Extends Class, will have a parent property, that allows you to call the other overridden method.
+The Extends property should be the first property in a class definition.
 
 #### Property: Implements
 
-* (*object*) A passed object's properties will be copied into this Class.
 * (*class*)  The properties of a passed Class will be copied into the target Class.
-* (*array*)  An array of objects or Classes, the properties of which will be copied into this Class.
+* (*array*)  An array of Classes, the properties of which will be copied into this Class.
 
 Implements is similar to Extends, except that it adopts properties from one or more other classes without inheritance.
-Useful when implementing a default set of properties in multiple Classes.  The Implements property should come after Extends but before all other properties.
+Useful when implementing a default set of properties in multiple Classes. The Implements property should come after Extends but before all other properties.
 
 #### Property: initialize
 
 * (*function*) The initialize function will be the constructor for this class when new instances are created.
+
+#### Property: toElement
+
+* (*function*) A method which returns an element. This method will be automatically called when passing an instance of a class in the [document.id][] function.
+
 
 ### Returns:
 
@@ -124,3 +129,5 @@ The same as creating a [new Class](#Class:constructor) with the Implements prope
 	var myAnimal = new Animal(20);
 	myAnimal.setName('Micia');
 	alert(myAnimal.name); // alerts 'Micia'
+
+[document.id]: /core/Element/Element#Window:document-id

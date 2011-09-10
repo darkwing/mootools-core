@@ -20,18 +20,6 @@ Element.Properties.events = {set: function(events){
 	this.addEvents(events);
 }};
 
-var triggerEvent = function(type, args, delay){
-	var events = this.retrieve('events');
-	if (!events || !events[type]) return this;
-	args = Array.from(args);
-
-	events[type].keys.each(function(fn){
-		if (delay) fn.delay(delay, this, args);
-		else fn.apply(this, args);
-	}, this);
-	return this;
-};
-
 [Element, Window, Document].invoke('implement', {
 
 	addEvent: function(type, fn){
@@ -44,14 +32,14 @@ var triggerEvent = function(type, args, delay){
 			condition = fn,
 			self = this;
 		if (custom){
-			if (custom.onAdd) custom.onAdd.call(this, fn);
+			if (custom.onAdd) custom.onAdd.call(this, fn, type);
 			if (custom.condition){
 				condition = function(event){
-					if (custom.condition.call(this, event)) return fn.call(this, event);
+					if (custom.condition.call(this, event, type)) return fn.call(this, event);
 					return true;
 				};
 			}
-			realType = custom.base || realType;
+			if (custom.base) realType = Function.from(custom.base).call(this, type);
 		}
 		var defn = function(){
 			return fn.call(self);
@@ -60,11 +48,11 @@ var triggerEvent = function(type, args, delay){
 		if (nativeEvent){
 			if (nativeEvent == 2){
 				defn = function(event){
-					event = new Event(event, self.getWindow());
+					event = new DOMEvent(event, self.getWindow());
 					if (condition.call(self, event) === false) event.stop();
 				};
 			}
-			this.addListener(realType, defn);
+			this.addListener(realType, defn, arguments[2]);
 		}
 		events[type].values.push(defn);
 		return this;
@@ -81,10 +69,10 @@ var triggerEvent = function(type, args, delay){
 		delete list.values[index];
 		var custom = Element.Events[type];
 		if (custom){
-			if (custom.onRemove) custom.onRemove.call(this, fn);
-			type = custom.base || type;
+			if (custom.onRemove) custom.onRemove.call(this, fn, type);
+			if (custom.base) type = Function.from(custom.base).call(this, type);
 		}
-		return (Element.NativeEvents[type]) ? this.removeListener(type, value) : this;
+		return (Element.NativeEvents[type]) ? this.removeListener(type, value, arguments[2]) : this;
 	},
 
 	addEvents: function(events){
@@ -112,7 +100,17 @@ var triggerEvent = function(type, args, delay){
 		return this;
 	},
 
-	triggerEvent: triggerEvent,
+	fireEvent: function(type, args, delay){
+		var events = this.retrieve('events');
+		if (!events || !events[type]) return this;
+		args = Array.from(args);
+
+		events[type].keys.each(function(fn){
+			if (delay) fn.delay(delay, this, args);
+			else fn.apply(this, args);
+		}, this);
+		return this;
+	},
 
 	cloneEvents: function(from, type){
 		from = document.id(from);
@@ -130,12 +128,6 @@ var triggerEvent = function(type, args, delay){
 
 });
 
-//<1.2compat>
-[Element, Window, Document].invoke('implement', {
-	fireEvent: triggerEvent
-});
-//</1.2compat>
-
 Element.NativeEvents = {
 	click: 2, dblclick: 2, mouseup: 2, mousedown: 2, contextmenu: 2, //mouse buttons
 	mousewheel: 2, DOMMouseScroll: 2, //mouse wheel
@@ -144,7 +136,7 @@ Element.NativeEvents = {
 	orientationchange: 2, // mobile
 	touchstart: 2, touchmove: 2, touchend: 2, touchcancel: 2, // touch
 	gesturestart: 2, gesturechange: 2, gestureend: 2, // gesture
-	focus: 2, blur: 2, change: 2, reset: 2, select: 2, submit: 2, //form elements
+	focus: 2, blur: 2, change: 2, reset: 2, select: 2, submit: 2, paste: 2, oninput: 2, //form elements
 	load: 2, unload: 1, beforeunload: 2, resize: 1, move: 1, DOMContentLoaded: 1, readystatechange: 1, //window
 	error: 1, abort: 1, scroll: 1 //misc
 };
@@ -173,6 +165,21 @@ Element.Events = {
 	}
 
 };
+
+/*<ltIE9>*/
+if (!window.addEventListener){
+	Element.NativeEvents.propertychange = 2;
+	Element.Events.change = {
+		base: function(){
+			var type = this.type;
+			return (this.get('tag') == 'input' && (type == 'radio' || type == 'checkbox')) ? 'propertychange' : 'change'
+		},
+		condition: function(event){
+			return !!(this.type != 'radio' || this.checked);
+		}
+	}
+}
+/*</ltIE9>*/
 
 //<1.2compat>
 

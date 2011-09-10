@@ -33,24 +33,30 @@ Function.implement({
 		try {
 			return this.apply(bind, Array.from(args));
 		} catch (e){}
-		
+
 		return null;
 	},
 
-	bind: function(bind){
+	/*<!ES5-bind>*/
+	bind: function(that){
 		var self = this,
-			args = (arguments.length > 1) ? Array.slice(arguments, 1) : null;
-		
-		return function(){
-			if (!args && !arguments.length) return self.call(bind);
-			if (args && arguments.length) return self.apply(bind, args.concat(Array.from(arguments)));
-			return self.apply(bind, args || arguments);
-		};
-	},
+			args = arguments.length > 1 ? Array.slice(arguments, 1) : null,
+			F = function(){};
 
-	delay: function(delay, bind, args){
-		return setTimeout(this.pass(args || [], bind), delay);
+		var bound = function(){
+			var context = that, length = arguments.length;
+			if (this instanceof bound){
+				F.prototype = self.prototype;
+				context = new F;
+			}
+			var result = (!args && !length)
+				? self.call(context)
+				: self.apply(context, args && length ? args.concat(Array.slice(arguments)) : args || arguments);
+			return context == that ? result : context;
+		};
+		return bound;
 	},
+	/*</!ES5-bind>*/
 
 	pass: function(args, bind){
 		var self = this;
@@ -60,8 +66,12 @@ Function.implement({
 		};
 	},
 
+	delay: function(delay, bind, args){
+		return setTimeout(this.pass((args == null ? [] : args), bind), delay);
+	},
+
 	periodical: function(periodical, bind, args){
-		return setInterval(this.pass(args || [], bind), periodical);
+		return setInterval(this.pass((args == null ? [] : args), bind), periodical);
 	}
 
 });
@@ -72,20 +82,12 @@ delete Function.prototype.bind;
 
 Function.implement({
 
-	bind: function(bind, args){
-		var self = this;
-		if (args != null) args = Array.from(args);
-		return function(){
-			return self.apply(bind, args || arguments);
-		};
-	},
-
 	create: function(options){
 		var self = this;
 		options = options || {};
 		return function(event){
 			var args = options.arguments;
-			args = (args != undefined) ? Array.from(args) : Array.slice(arguments, (options.event) ? 1 : 0);
+			args = (args != null) ? Array.from(args) : Array.slice(arguments, (options.event) ? 1 : 0);
 			if (options.event) args = [event || window.event].extend(args);
 			var returns = function(){
 				return self.apply(options.bind || null, args);
@@ -94,6 +96,14 @@ Function.implement({
 			if (options.periodical) return setInterval(returns, options.periodical);
 			if (options.attempt) return Function.attempt(returns);
 			return returns();
+		};
+	},
+
+	bind: function(bind, args){
+		var self = this;
+		if (args != null) args = Array.from(args);
+		return function(){
+			return self.apply(bind, args || arguments);
 		};
 	},
 
@@ -110,6 +120,8 @@ Function.implement({
 	}
 
 });
+
+if (Object.create == Function.prototype.create) Object.create = null;
 
 var $try = Function.attempt;
 

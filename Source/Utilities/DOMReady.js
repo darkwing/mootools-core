@@ -1,7 +1,7 @@
 /*
 ---
 
-name: DomReady
+name: DOMReady
 
 description: Contains the custom event domready.
 
@@ -9,7 +9,7 @@ license: MIT-style license.
 
 requires: [Browser, Element, Element.Event]
 
-provides: DomReady
+provides: [DOMReady, DomReady]
 
 ...
 */
@@ -17,32 +17,27 @@ provides: DomReady
 (function(window, document){
 
 var ready,
+	loaded,
 	checks = [],
 	shouldPoll,
 	timer,
-	isFramed = true;
-
-// Thanks to Rich Dougherty <http://www.richdougherty.com/>
-try {
-	isFramed = window.frameElement != null;
-} catch(e){}
+	testElement = document.createElement('div');
 
 var domready = function(){
 	clearTimeout(timer);
 	if (ready) return;
 	Browser.loaded = ready = true;
 	document.removeListener('DOMContentLoaded', domready).removeListener('readystatechange', check);
-	
-	document.triggerEvent('domready');
-	window.triggerEvent('domready');
+
+	document.fireEvent('domready');
+	window.fireEvent('domready');
 };
 
 var check = function(){
-	for (var i = checks.length; i--; ) if (checks[i]()){
+	for (var i = checks.length; i--;) if (checks[i]()){
 		domready();
 		return true;
 	}
-	
 	return false;
 };
 
@@ -53,23 +48,26 @@ var poll = function(){
 
 document.addListener('DOMContentLoaded', domready);
 
+/*<ltIE8>*/
 // doScroll technique by Diego Perini http://javascript.nwbox.com/IEContentLoaded/
-var testElement = document.createElement('div');
-if (testElement.doScroll && !isFramed){
-	checks.push(function(){
-		try {
-			testElement.doScroll();
-			return true;
-		} catch (e){}
-
-		return false;
-	});
+// testElement.doScroll() throws when the DOM is not ready, only in the top window
+var doScrollWorks = function(){
+	try {
+		testElement.doScroll();
+		return true;
+	} catch (e){}
+	return false;
+};
+// If doScroll works already, it can't be used to determine domready
+//   e.g. in an iframe
+if (testElement.doScroll && !doScrollWorks()){
+	checks.push(doScrollWorks);
 	shouldPoll = true;
 }
+/*</ltIE8>*/
 
 if (document.readyState) checks.push(function(){
 	var state = document.readyState;
-
 	return (state == 'loaded' || state == 'complete');
 });
 
@@ -78,26 +76,30 @@ else shouldPoll = true;
 
 if (shouldPoll) poll();
 
-var onAdd = function(fn){
-	if (ready) fn.call(this);
-};
-
 Element.Events.domready = {
-	onAdd: onAdd
+	onAdd: function(fn){
+		if (ready) fn.call(this);
+	}
 };
 
 // Make sure that domready fires before load
 Element.Events.load = {
 	base: 'load',
-	onAdd: onAdd,
+	onAdd: function(fn){
+		if (loaded && this == window) fn.call(this);
+	},
 	condition: function(){
-		domready();
+		if (this == window){
+			domready();
+			delete Element.Events.load;
+		}
 		return true;
 	}
 };
 
-window.addEvent('load',function(){
-	delete Element.Events.load;
+// This is based on the custom load event
+window.addEvent('load', function(){
+	loaded = true;
 });
 
 })(window, document);

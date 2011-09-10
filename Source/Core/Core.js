@@ -15,7 +15,7 @@ inspiration:
   - Class implementation inspired by [Base.js](http://dean.edwards.name/weblog/2006/03/base/) Copyright (c) 2006 Dean Edwards, [GNU Lesser General Public License](http://opensource.org/licenses/lgpl-license.php)
   - Some functionality inspired by [Prototype.js](http://prototypejs.org) Copyright (c) 2005-2007 Sam Stephenson, [MIT License](http://opensource.org/licenses/mit-license.php)
 
-provides: [Core, MooTools, Type, typeOf, instanceOf]
+provides: [Core, MooTools, Type, typeOf, instanceOf, Native]
 
 ...
 */
@@ -23,7 +23,7 @@ provides: [Core, MooTools, Type, typeOf, instanceOf]
 (function(){
 
 this.MooTools = {
-	version: '1.3dev',
+	version: '1.4.0dev',
 	build: '%build%'
 };
 
@@ -186,7 +186,7 @@ var hooksOf = function(object){
 };
 
 var implement = function(name, method){
-	if (method && method.$hidden) return this;
+	if (method && method.$hidden) return;
 
 	var hooks = hooksOf(this);
 
@@ -195,22 +195,19 @@ var implement = function(name, method){
 		if (typeOf(hook) == 'type') implement.call(hook, name, method);
 		else hook.call(this, name, method);
 	}
-	
+
 	var previous = this.prototype[name];
 	if (previous == null || !previous.$protected) this.prototype[name] = method;
 
 	if (this[name] == null && typeOf(method) == 'function') extend.call(this, name, function(item){
 		return method.apply(item, slice.call(arguments, 1));
 	});
-
-	return this;
 };
 
 var extend = function(name, method){
-	if (method && method.$hidden) return this;
+	if (method && method.$hidden) return;
 	var previous = this[name];
 	if (previous == null || !previous.$protected) this[name] = method;
-	return this;
 };
 
 Type.implement({
@@ -260,7 +257,7 @@ var force = function(name, object, methods){
 
 force('String', String, [
 	'charAt', 'charCodeAt', 'concat', 'indexOf', 'lastIndexOf', 'match', 'quote', 'replace', 'search',
-	'slice', 'split', 'substr', 'substring', 'toLowerCase', 'toUpperCase'
+	'slice', 'split', 'substr', 'substring', 'trim', 'toLowerCase', 'toUpperCase'
 ])('Array', Array, [
 	'pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift', 'concat', 'join', 'slice',
 	'indexOf', 'lastIndexOf', 'filter', 'forEach', 'every', 'map', 'some', 'reduce', 'reduceRight'
@@ -298,9 +295,10 @@ Number.extend('random', function(min, max){
 
 // forEach, each
 
+var hasOwnProperty = Object.prototype.hasOwnProperty;
 Object.extend('forEach', function(object, fn, bind){
 	for (var key in object){
-		if (object.hasOwnProperty(key)) fn.call(bind, object[key], key, object);
+		if (hasOwnProperty.call(object, key)) fn.call(bind, object[key], key, object);
 	}
 });
 
@@ -386,7 +384,7 @@ Object.extend({
 
 var UID = Date.now();
 
-String.extend('generateUID', function(){
+String.extend('uniqueID', function(){
 	return (UID++).toString(36);
 });
 

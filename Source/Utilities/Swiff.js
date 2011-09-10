@@ -10,7 +10,7 @@ license: MIT-style license.
 credits:
   - Flash detection & Internet Explorer + Flash Player 9 fix inspired by SWFObject.
 
-requires: [Options, Object]
+requires: [Options, Object, Element]
 
 provides: Swiff
 
@@ -18,8 +18,6 @@ provides: Swiff
 */
 
 (function(){
-
-var id = 0;
 
 var Swiff = this.Swiff = new Class({
 
@@ -46,7 +44,7 @@ var Swiff = this.Swiff = new Class({
 	},
 
 	initialize: function(path, options){
-		this.instance = 'Swiff_' + id++;
+		this.instance = 'Swiff_' + String.uniqueID();
 
 		this.setOptions(options);
 		options = this.options;
@@ -100,7 +98,7 @@ var Swiff = this.Swiff = new Class({
 	},
 
 	remote: function(){
-		return Swiff.remote.apply(Swiff, [this.toElement()].extend(arguments));
+		return Swiff.remote.apply(Swiff, [this.toElement()].append(arguments));
 	}
 
 });

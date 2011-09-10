@@ -42,18 +42,6 @@ var removeOn = function(string){
 	});
 };
 
-var triggerEvent = function(type, args, delay){
-	type = removeOn(type);
-	var events = this.$events[type];
-	if (!events) return this;
-	args = Array.from(args);
-	events.each(function(fn){
-		if (delay) fn.delay(delay, this, args);
-		else fn.apply(this, args);
-	}, this);
-	return this;
-};
-
 this.Events = new Class({
 
 	$events: {},
@@ -75,8 +63,18 @@ this.Events = new Class({
 		return this;
 	},
 
-	triggerEvent: triggerEvent,
-	
+	fireEvent: function(type, args, delay){
+		type = removeOn(type);
+		var events = this.$events[type];
+		if (!events) return this;
+		args = Array.from(args);
+		events.each(function(fn){
+			if (delay) fn.delay(delay, this, args);
+			else fn.apply(this, args);
+		}, this);
+		return this;
+	},
+
 	removeEvent: function(type, fn){
 		type = removeOn(type);
 		var events = this.$events[type];
@@ -97,23 +95,20 @@ this.Events = new Class({
 		for (type in this.$events){
 			if (events && events != type) continue;
 			var fns = this.$events[type];
-			for (var i = fns.length; i--;) this.removeEvent(type, fns[i]);
+			for (var i = fns.length; i--;) if (i in fns){
+				this.removeEvent(type, fns[i]);
+			}
 		}
 		return this;
 	}
 
 });
 
-/*<1.2compat>*/
-Events.implement({fireEvent: triggerEvent});
-/*</1.2compat>*/
-
 this.Options = new Class({
 
 	setOptions: function(){
 		var options = this.options = Object.merge.apply(null, [{}, this.options].append(arguments));
-		if (!this.addEvent) return this;
-		for (var option in options){
+		if (this.addEvent) for (var option in options){
 			if (typeOf(options[option]) != 'function' || !(/^on[A-Z]/).test(option)) continue;
 			this.addEvent(option, options[option]);
 			delete options[option];

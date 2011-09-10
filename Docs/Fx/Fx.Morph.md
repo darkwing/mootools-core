@@ -1,7 +1,7 @@
 Class: Fx.Morph {#Fx-Morph}
 ===========================
 
-Allows for the animation of multiple CSS properties at once, even by a CSS selector. Inherits methods, properties, options and events from [Fx][].
+Allows for the animation of multiple CSS properties at once, even by a simple CSS selector. Inherits methods, properties, options and events from [Fx][].
 
 ### Extends:
 
@@ -24,31 +24,44 @@ Allows for the animation of multiple CSS properties at once, even by a CSS selec
 
 Multiple styles with start and end values using an object:
 
-	var myEffect = new Fx.Morph('myElement', {duration: 'long', transition: Fx.Transitions.Sine.easeOut});
+	var myEffect = new Fx.Morph('myElement', {
+		duration: 'long',
+		transition: Fx.Transitions.Sine.easeOut
+	});
 
 	myEffect.start({
-		'height': [10, 100], //Morphs the 'height' style from 10px to 100px.
-		'width': [900, 300]  //Morphs the 'width' style from 900px to 300px.
+		'height': [10, 100], // Morphs the 'height' style from 10px to 100px.
+		'width': [900, 300]  // Morphs the 'width' style from 900px to 300px.
 	});
 
 
 Multiple styles with the start value omitted will default to the current Element's value:
 
-	var myEffect = new Fx.Morph('myElement', {duration: 'short', transition: Fx.Transitions.Sine.easeOut});
+	var myEffect = new Fx.Morph('myElement', {
+		duration: 'short',
+		transition: Fx.Transitions.Sine.easeOut
+	});
 
 	myEffect.start({
-		'height': 100, //Morphs the height from the current to 100px.
-		'width': 300   //Morphs the width from the current to 300px.
+		'height': 100, // Morphs the height from the current to 100px.
+		'width': 300   // Morphs the width from the current to 300px.
 	});
 
 
-Morphing one Element to match the CSS values within a CSS class:
+Morphing one Element to match the CSS values within a CSS class. This is useful when
+separating the logic and styles:
 
-	var myEffect = new Fx.Morph('myElement', {duration: 1000, transition: Fx.Transitions.Sine.easeOut});
+	var myEffect = new Fx.Morph('myElement', {
+		duration: 1000,
+		transition: Fx.Transitions.Sine.easeOut
+	});
 
 	// the styles of myClassName will be applied to the target Element.
 	myEffect.start('.myClassName');
 
+### Notes:
+
+- This feature only works for simple selectors like a single class or id due to limited browser support for complex selectors.
 
 ### See Also:
 
@@ -118,6 +131,7 @@ Executes a transition for any number of CSS properties in tandem.
 
 - If a string is passed as the CSS selector, the selector must be identical to the one within the CSS.
 - Multiple selectors (with commas) are not supported.
+- @import'ed CSS rules will not be available for Morph calls. All CSS selectors must be present in CSS directly loaded into the page.
 
 
 Object: Element.Properties {#Element-Properties}

@@ -6,7 +6,7 @@ provides: Slick.Parser
 ...
 */
 
-(function(){
+;(function(){
 
 var parsed,
 	separatorIndex,
@@ -17,19 +17,24 @@ var parsed,
 	reUnescape = /\\/g;
 
 var parse = function(expression, isReversed){
-	if (!expression) return null;
+	if (expression == null) return null;
 	if (expression.Slick === true) return expression;
 	expression = ('' + expression).replace(/^\s+|\s+$/g, '');
 	reversed = !!isReversed;
 	var currentCache = (reversed) ? reverseCache : cache;
 	if (currentCache[expression]) return currentCache[expression];
-	parsed = {Slick: true, expressions: [], raw: expression, reverse: function(){
-		return parse(this.raw, true);
-	}};
+	parsed = {
+		Slick: true,
+		expressions: [],
+		raw: expression,
+		reverse: function(){
+			return parse(this.raw, true);
+		}
+	};
 	separatorIndex = -1;
 	while (expression != (expression = expression.replace(regexp, parser)));
 	parsed.length = parsed.expressions.length;
-	return currentCache[expression] = (reversed) ? reverse(parsed) : parsed;
+	return currentCache[parsed.raw] = (reversed) ? reverse(parsed) : parsed;
 };
 
 var reverseCombinator = function(combinator){
@@ -58,7 +63,9 @@ var reverse = function(expression){
 };
 
 var escapeRegExp = function(string){// Credit: XRegExp 0.6.1 (c) 2007-2008 Steven Levithan <http://stevenlevithan.com/regex/xregexp/> MIT License
-	return string.replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&");
+	return string.replace(/[-[\]{}()*+?.\\^$|,#\s]/g, function(match){
+		return '\\' + match;
+	});
 };
 
 var regexp = new RegExp(
@@ -85,12 +92,12 @@ __END__
 	\\](?!\\]) \n\
 	|   :+ ( <unicode>+ )(?:\
 	\\( (?:\
-		 ([\"']?)((?:\\([^\\)]+\\)|[^\\(\\)]*)+)\\12\
+		(?:([\"'])([^\\12]*)\\12)|((?:\\([^)]+\\)|[^()]*)+)\
 	) \\)\
 	)?\
 	)"
 */
-	"^(?:\\s*(,)\\s*|\\s*(<combinator>+)\\s*|(\\s+)|(<unicode>+|\\*)|\\#(<unicode>+)|\\.(<unicode>+)|\\[\\s*(<unicode1>+)(?:\\s*([*^$!~|]?=)(?:\\s*(?:([\"']?)(.*?)\\9)))?\\s*\\](?!\\])|:+(<unicode>+)(?:\\((?:([\"']?)((?:\\([^\\)]+\\)|[^\\(\\)]*)+)\\12)\\))?)"
+	"^(?:\\s*(,)\\s*|\\s*(<combinator>+)\\s*|(\\s+)|(<unicode>+|\\*)|\\#(<unicode>+)|\\.(<unicode>+)|\\[\\s*(<unicode1>+)(?:\\s*([*^$!~|]?=)(?:\\s*(?:([\"']?)(.*?)\\9)))?\\s*\\](?!\\])|(:+)(<unicode>+)(?:\\((?:(?:([\"'])([^\\13]*)\\13)|((?:\\([^)]+\\)|[^()]*)+))\\))?)"
 	.replace(/<combinator>/, '[' + escapeRegExp(">+~`!@$%^&={}\\;</") + ']')
 	.replace(/<unicode>/g, '(?:[\\w\\u00a1-\\uFFFF-]|\\\\[^\\s0-9a-f])')
 	.replace(/<unicode1>/g, '(?:[:\\w\\u00a1-\\uFFFF-]|\\\\[^\\s0-9a-f])')
@@ -112,8 +119,10 @@ function parser(
 	attributeQuote,
 	attributeValue,
 
+	pseudoMarker,
 	pseudoClass,
 	pseudoQuote,
+	pseudoClassQuotedValue,
 	pseudoClassValue
 ){
 	if (separator || separatorIndex === -1){
@@ -150,12 +159,14 @@ function parser(
 		});
 
 	} else if (pseudoClass){
+		pseudoClassValue = pseudoClassValue || pseudoClassQuotedValue;
 		pseudoClassValue = pseudoClassValue ? pseudoClassValue.replace(reUnescape, '') : null;
 
 		if (!currentParsed.pseudos) currentParsed.pseudos = [];
 		currentParsed.pseudos.push({
 			key: pseudoClass.replace(reUnescape, ''),
-			value: pseudoClassValue
+			value: pseudoClassValue,
+			type: pseudoMarker.length == 1 ? 'class' : 'element'
 		});
 
 	} else if (attributeKey){
@@ -182,6 +193,10 @@ function parser(
 				return !!value;
 			};
 		}
+
+		if (attributeValue == '' && (/^[*$^]=$/).test(attributeOperator)) test = function(){
+			return false;
+		};
 
 		if (!test) test = function(value){
 			return value && regexp.test(value);
